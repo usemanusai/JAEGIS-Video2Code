@@ -114,16 +114,37 @@ curl -s http://localhost:8080/results | jq .
 
 ## Architecture Overview
 
-High‑level data flow:
+High‑level data flow (System Architecture):
 
 ```mermaid
+%% System Architecture Diagram (inline)
 flowchart LR
-  A[Browser] --> B[Frontend (React + Vite)]
-  B --> C[AI Gateway (Express)]
-  C --> D[Video Processor (Flask + OpenCV)]
-  C --> E[(OpenRouter API)]
-  D <--> V[(Docker Volume /data)]
+  subgraph Browser
+    U[User]
+  end
+  subgraph Docker_Network
+    FE[Frontend (React/Vite):5173]
+    GW[AI Gateway (Express):8080]
+    VP[Video Processor (Flask):5000]
+    VOL[(Docker Volume /data)]
+  end
+  OR[(OpenRouter API)]
+  U --> FE
+  FE --> GW
+  GW --> VP
+  VP <--> VOL
+  GW -. LLM calls .-> OR
 ```
+
+Additional diagrams
+- Data Flow (upload → frames → analysis → artifacts → results/zip)
+- Sequence (end‑to‑end with error/timeout branches)
+- Component Relationships (compose orchestration, envs, and volume)
+
+See docs/diagrams/ for the source Mermaid definitions.
+
+
+Figure: System Architecture — The browser talks to the Frontend, which communicates with the AI Gateway. The gateway forwards uploads to the Video Processor and calls OpenRouter for analysis. A shared Docker volume /data stores uploads and frames.
 
 - Frontend (React + Vite)
   - User upload UI, Workspace to view artifacts, Chat to refine code
@@ -283,6 +304,93 @@ Mock mode behavior
 Free‑tier recommendations
 - Prefer OpenRouter free vision models for low-cost development (e.g., qwen/qwen2.5-vl-32b-instruct:free, google/gemma-3-27b-it:free, meta-llama/llama-3.2-11b-vision-instruct:free, mistralai/mistral-small-3.1-24b-instruct:free).
 
+
+
+---
+
+## Production Hardening
+
+For public deployments, consider the following hardening steps:
+
+1) TLS Termination and Reverse Proxy
+- Place an Nginx or Caddy reverse proxy in front of the frontend and ai-gateway.
+- Terminate TLS at the proxy; route / (5173) and API paths (8080) on the same domain.
+- Example Nginx location snippet:
+
+```nginx
+server {
+  listen 443 ssl;
+  server_name video2code.example.com;
+  # ssl_certificate /path/fullchain.pem; ssl_certificate_key /path/privkey.pem;
+
+  location / {
+    proxy_pass http://frontend:5173;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto https;
+  }
+  location /results {
+    proxy_pass http://ai-gateway:8080;
+  }
+  location /proxy/ {
+    proxy_pass http://ai-gateway:8080;
+  }
+  location /download.zip {
+    proxy_pass http://ai-gateway:8080;
+  }
+}
+```
+
+2) Authentication and Authorization
+- Add basic auth or JWT verification at the reverse proxy or in the ai-gateway.
+- Recommended: protect upload and results endpoints if exposed to the public internet.
+
+3) Rate Limiting
+- Mitigate abuse by enforcing rate limits at the reverse proxy (Nginx `limit_req_zone`) or a gateway middleware.
+
+
+### Troubleshooting (Expanded)
+
+Common HTTP responses and likely causes:
+- 400 missing_file: Multipart form did not include field `file`
+- 413 file_too_large: Exceeds MAX_UPLOAD_MB
+- 415 unsupported_media_type: Non-MP4 content-type or filename
+- 502 generation_failed: LLM error; check OPENROUTER_API_KEYS/MODEL and outbound connectivity
+- 504 processor_timeout: Video processing exceeded VIDEO_PROCESSOR_TIMEOUT_MS
+- 504 LLM timeout: LLM analysis exceeded LLM_TIMEOUT_MS
+
+Symptoms and actions:
+- Upload returns 415: Ensure Content-Type is video/mp4 and use field name `file`
+- Results returns 502/504: Inspect ai-gateway logs; verify keys and network; try a shorter clip
+- Download ZIP fails: Ensure /results generates artifacts first; inspect gateway logs for errors
+- Performance issues: Reduce MAX_ANALYSIS_FRAMES or upload shorter videos; increase Docker RAM/CPU
+
+4) Resource Limits
+- Configure Docker resource limits per service and monitor with `docker stats`.
+
+5) Logs & Monitoring
+- Centralize logs and consider request logging/redaction to avoid secrets in logs.
+
+---
+
+## Operations
+
+1) API Key Rotation (OPENROUTER_API_KEYS)
+- Keys are provided as a CSV and rotated per request by the gateway.
+- To rotate keys, update the .env and `docker compose up -d --build` (hot reload without rebuild is acceptable if only env changes; otherwise recreate ai-gateway).
+- Avoid printing keys in logs; they are not logged by default.
+
+2) Data Management (/data volume)
+- /data/uploads stores original uploads; /data/frames stores extracted frames.
+- For storage hygiene:
+  - Periodically prune old uploads and frames.
+  - Backup is optional; artifacts are generated on demand.
+  - To clean: `docker compose stop` then carefully remove files under the mounted volume.
+
+3) Backups & Retention
+- If regulatory retention is needed, snapshot /data or export artifacts post-generation.
+
+4) Environment Changes
+- When changing env variables in .env, restart affected services. Compose warning messages about unset envs are harmless if defaults are provided in code.
 
 ### OpenRouter free vision models (ready-to-use)
 The following free vision-capable models are available via OpenRouter and work well with VIDEO2CODE. Set OPENROUTER_MODEL to any of these values in your .env to use them:

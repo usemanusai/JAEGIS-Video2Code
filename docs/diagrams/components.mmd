@@ -1,0 +1,14 @@
+%% Component Relationship: compose, envs, volume
+flowchart TB
+  subgraph docker-compose.yml
+    FE[frontend]
+    GW[ai-gateway]
+    VP[video-processor]
+    V[/volume: processing_data -> /data/]
+  end
+
+  FE -- VITE_API_BASE --> GW
+  GW -- env --> GW_ENV[(OPENROUTER_API_KEYS, OPENROUTER_MODEL, MAX_ANALYSIS_FRAMES, MAX_UPLOAD_MB, VIDEO_PROCESSOR_TIMEOUT_MS, LLM_TIMEOUT_MS)]
+  GW --- V
+  VP --- V
+

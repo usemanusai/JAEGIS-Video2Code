@@ -1,0 +1,22 @@
+%% System Architecture Diagram for VIDEO2CODE v1.0.0
+%% Shows services, network, volume, and external dependency
+flowchart LR
+  subgraph Browser
+    U[User]
+  end
+
+  subgraph Docker_Network
+    FE[Frontend (React/Vite):5173]
+    GW[AI Gateway (Express):8080]
+    VP[Video Processor (Flask):5000]
+    VOL[(Docker Volume /data)]
+  end
+
+  OR[(OpenRouter API)]
+
+  U --> FE
+  FE --> GW
+  GW --> VP
+  VP <--> VOL
+  GW -. LLM calls .-> OR
+

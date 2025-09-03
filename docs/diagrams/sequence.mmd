@@ -1,0 +1,27 @@
+%% Sequence Diagram: End-to-end workflow with error paths
+sequenceDiagram
+  participant User
+  participant FE as Frontend
+  participant GW as AI Gateway
+  participant VP as Video Processor
+  participant OR as OpenRouter
+
+  User->>FE: Select MP4 and click Upload
+  FE->>GW: POST /proxy/process (multipart)
+  GW->>VP: POST /process (file) [VIDEO_PROCESSOR_TIMEOUT_MS]
+  VP-->>GW: {frameCount, framesDir} | 4xx/5xx
+
+  alt Success
+    GW->>GW: sample frames (MAX_ANALYSIS_FRAMES)
+    GW->>OR: chatCompletion [LLM_TIMEOUT_MS]
+    OR-->>GW: content / 5xx
+    GW->>FE: GET /results -> {analysis, reactCode, openapi, backend}
+    FE->>User: Show artifacts + Download ZIP
+  else VP Timeout
+    GW-->>FE: 504 processor_timeout
+  else Unsupported media
+    GW-->>FE: 415 unsupported_media_type
+  else LLM Timeout/Error
+    GW-->>FE: 504/502 with partial.analysis (if any)
+  end
+

@@ -1,0 +1,11 @@
+%% Data Flow Diagram: upload to ZIP download
+flowchart LR
+  A[Upload MP4] --> B{Proxy /proxy/process}
+  B -->|multipart/form-data| C[Video Processor /process]
+  C -->|OpenCV: extract 1 FPS| D[/data/frames]
+  D --> E[Gateway: sample frames (MAX_ANALYSIS_FRAMES)]
+  E --> F[OpenRouter LLM (LLM_TIMEOUT_MS)]
+  F --> G[Generate React + OpenAPI + NestJS]
+  G --> H[GET /results]
+  G --> I[GET /download.zip]
+
