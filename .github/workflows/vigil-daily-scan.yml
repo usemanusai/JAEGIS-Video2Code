@@ -35,7 +35,7 @@ jobs:
           pip install --no-cache-dir pip-audit
 
       - name: Trivy scan (filesystem)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
