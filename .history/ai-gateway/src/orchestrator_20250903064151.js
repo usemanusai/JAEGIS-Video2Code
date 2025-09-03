@@ -4,7 +4,7 @@ import { OpenRouterClient } from './openrouter.js'
 import { generateReact, generateOpenAPI, generateNestJS } from './codegen.js'
 
 const FRAMES_DIR = '/data/frames'
-const MODEL = process.env.OPENROUTER_MODEL || 'qwen/qwen2.5-vl-32b-instruct:free'
+const MODEL = process.env.OPENROUTER_MODEL || 'google/gemini-1.5-flash-latest'
 
 export class OrchestratorService {
   constructor(keysCsv) {

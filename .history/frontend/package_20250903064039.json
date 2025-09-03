@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --port 5173",
-    "lint": "eslint . --config eslint.config.js",
+    "lint": "eslint .",
     "format": "prettier -w .",
     "test": "jest --passWithNoTests"
   },

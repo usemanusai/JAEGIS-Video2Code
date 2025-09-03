@@ -1,0 +1,13 @@
+services:
+  test-runner:
+    image: node:22-alpine
+    working_dir: /tests
+    depends_on:
+      - ai-gateway
+    environment:
+      - API_BASE=http://ai-gateway:8080
+      - SAMPLE_URL=https://sample-videos.com/video321/mp4/240/big_buck_bunny_240p_1mb.mp4
+    volumes:
+      - ./ai-gateway/tests:/tests:ro
+    command: ["node","integration.mjs"]
+

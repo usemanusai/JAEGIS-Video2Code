@@ -24,6 +24,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
+      - ./video-processor:/app
       - processing_data:/data
 
 volumes:

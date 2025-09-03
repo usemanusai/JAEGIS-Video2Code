@@ -1,0 +1,14 @@
+services:
+  test-runner:
+    image: node:22-alpine
+    working_dir: /tests
+    depends_on:
+      - ai-gateway
+    environment:
+      - API_BASE=http://ai-gateway:8080
+      - TEST_VIDEO=/test-data/WORKFLOW-OF-EXPORTING-GEMINI-CHATS.mp4
+    volumes:
+      - ./ai-gateway/tests:/tests:ro
+      - ./test-data:/test-data:ro
+    command: ["node","integration.mjs"]
+
