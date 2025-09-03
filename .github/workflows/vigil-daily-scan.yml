@@ -102,9 +102,10 @@ jobs:
           mkdir -p vigil-reports
           echo "\n## License Summary" >> ${{ steps.report.outputs.report }}
           if [ -f vigil-reports/licenses.json ]; then
-            problem_count=$(jq 'to_entries | map(select(.value.licenses | test("GPL|AGPL|LGPL|SSPL|BUSL"))) | length' vigil-reports/licenses.json 2>/dev/null || echo 0)
-            echo "Potentially problematic licenses (GPL/AGPL/LGPL/SSPL/BUSL): $problem_count" >> ${{ steps.report.outputs.report }}
-            jq -r 'to_entries | map(select(.value.licenses | test("GPL|AGPL|LGPL|SSPL|BUSL"))) | .[] | "- \(.key): \(.value.licenses)"' vigil-reports/licenses.json 2>/dev/null || true >> ${{ steps.report.outputs.report }}
+            policy=$(cat .github/vigil-license-policy.txt 2>/dev/null || echo 'GPL|AGPL|LGPL|SSPL|BUSL')
+            problem_count=$(jq --arg policy "$policy" 'to_entries | map(select(.value.licenses | test($policy))) | length' vigil-reports/licenses.json 2>/dev/null || echo 0)
+            echo "Potentially problematic licenses ($policy): $problem_count" >> ${{ steps.report.outputs.report }}
+            jq -r --arg policy "$policy" 'to_entries | map(select(.value.licenses | test($policy))) | .[] | "- \(.key): \(.value.licenses)"' vigil-reports/licenses.json 2>/dev/null || true >> ${{ steps.report.outputs.report }}
           else
             echo "license-checker output missing" >> ${{ steps.report.outputs.report }}
           fi

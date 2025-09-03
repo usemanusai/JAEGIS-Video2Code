@@ -1,0 +1,45 @@
+name: Nightly VIGIL Dispatcher
+
+on:
+  schedule:
+    - cron: '15 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check last VIGIL run time
+        id: last
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -e
+          # Get last 1 run of VIGIL Daily Security Scan
+          data=$(gh run list --workflow "VIGIL Daily Security Scan" --limit 1 --json status,createdAt -R "$REPO")
+          now=$(date -u +%s)
+          if [ -z "$data" ] || [ "$data" = "[]" ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          created=$(echo "$data" | jq -r '.[0].createdAt')
+          created_ts=$(date -u -d "$created" +%s)
+          delta=$(( now - created_ts ))
+          # 24h = 86400 seconds
+          if [ "$delta" -ge 86400 ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger VIGIL via repository_dispatch if needed
+        if: steps.last.outputs.should_run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/${{ github.repository }}/dispatches -f event_type=vigil-run
+

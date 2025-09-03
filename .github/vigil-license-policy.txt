@@ -1,0 +1,4 @@
+# Regex of licenses considered non-compliant or requiring review
+# Edit to match your organization’s policy. Examples: GPL|AGPL|LGPL|SSPL|BUSL|CDDL
+GPL|AGPL|LGPL|SSPL|BUSL
+

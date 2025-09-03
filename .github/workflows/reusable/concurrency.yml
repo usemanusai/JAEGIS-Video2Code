@@ -1,0 +1,10 @@
+# Reusable YAML anchor for concurrency across workflows
+# Usage in a workflow: add the following near the top-level (same level as `on`):
+#   <<: *default_concurrency
+# Or if YAML anchors aren’t supported due to Actions parsing nuances, copy the block.
+
+x-defaults: &default_concurrency
+  concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
