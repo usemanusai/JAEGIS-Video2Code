@@ -8,12 +8,9 @@ FRAMES_DIR = "/data/frames"
 
 app = Flask(__name__)
 
-
 @app.get("/health")
 def health():
     return jsonify({"ok": True})
-
-
 
 @app.post("/process")
 def process_video():
@@ -34,8 +31,6 @@ def process_video():
     return jsonify(
         {"message": "Processing complete", "frameCount": count, "framesDir": out_dir}
     )
-
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
 

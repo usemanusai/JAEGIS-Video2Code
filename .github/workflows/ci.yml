@@ -28,10 +28,6 @@ jobs:
         run: |
           docker compose up -d --build
 
-      # Sanity-check: ensure ai-gateway can see the env (prints only 'present/missing')
-      - name: Verify ai-gateway env injection (non-secret)
-        run: |
-          docker compose run --rm ai-gateway node -e "console.log(process.env.OPENROUTER_API_KEYS ? 'present' : 'missing', process.env.OPENROUTER_MODEL ? 'present' : 'missing')"
 
       - name: Python unit tests (video-processor)
         run: |
