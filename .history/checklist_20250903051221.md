@@ -1,0 +1,112 @@
+# Mockup Video to Code - Development Checklist
+
+## Document Information
+
+- Version: 1.0
+- Date: {Current Date}
+- Status: Final
+- Prepared for: Development Team Handoff
+
+## Overview
+
+This checklist provides a comprehensive guide for developing the "Mockup Video to Code" application from initial setup through to a functional tool. Each section contains specific, actionable tasks derived from the Product Requirements Document and the Technical Architecture Document.
+
+## Pre-Development Setup
+
+### Environment Setup
+
+- [x] Install Docker and Docker Compose.
+- [ ] Install VS Code with recommended extensions (ESLint, Prettier, Python).
+- [x] Set up a Git repository for the project.
+- [x] Create a root .env file and add the OPENROUTER_API_KEYS variable.
+
+### Project Initialization
+
+- [x] Create the monorepo project structure (/frontend, /video-processor, /ai-gateway).
+- [x] Initialize a docker-compose.yml file at the root.
+- [x] Create a Dockerfile for each of the three services.
+- [x] Create initial package.json files for the frontend and AI gateway services.
+- [x] Create an initial requirements.txt for the video processor service.
+
+## Phase 1: Core Infrastructure & Video Processing
+
+### Backend Foundation (Video Processor)
+
+- [ ] Implement a simple web server (Flask) in the video processor service.
+- [ ] Create the POST /process endpoint to accept video file uploads.
+- [ ] Implement the core video processing logic using OpenCV to extract frames.
+- [ ] Configure the service to save extracted frames to a shared Docker volume (/data/frames).
+- [ ] Add unit tests for the frame extraction logic.
+
+### Frontend Foundation
+
+- [ ] Initialize a React + Vite application in the /frontend directory.
+- [ ] Create the main UploadComponent for file drag-and-drop.
+- [ ] Implement the logic to send the uploaded file to the video processor's /process endpoint.
+- [ ] Set up basic routing for the Upload and Workspace screens.
+- [ ] Implement a basic loading/spinner state after file upload.
+
+### Docker Orchestration
+
+- [ ] Configure docker-compose.yml to build and run the frontend and video-processor services.
+- [ ] Define the shared volume (processing_data) and mount it to the video processor service at /data.
+- [ ] Ensure the frontend can communicate with the video processor service within the Docker network.
+
+## Phase 2: AI Core Generation
+
+### AI Gateway Service
+
+- [ ] Initialize a Node.js + Express application in the /ai-gateway directory.
+- [ ] Implement the OpenRouterClient to handle API calls, including the key rotation logic.
+- [ ] Create the OrchestratorService to manage the code generation flow.
+- [ ] Implement logic for the OrchestratorService to read frames from the shared volume (/data/frames).
+- [ ] Develop the prompting logic to send frames to a vision LLM and request UI component definitions.
+- [ ] Implement the CodeGenerator module to create React, NestJS, and OpenAPI content from the LLM responses.
+- [ ] Create the GET /results endpoint to serve the generated artifacts to the frontend.
+
+### Docker Orchestration Update
+
+- [ ] Add the ai-gateway service to the docker-compose.yml.
+- [ ] Mount the shared volume (processing_data) to the AI gateway at /data.
+- [ ] Ensure the AI gateway can access the internet to call the OpenRouter API.
+
+## Phase 3: Interactive Workspace
+
+### Frontend Workspace UI
+
+- [ ] Create the WorkspaceComponent to house the results.
+- [ ] Implement a tabbed interface for "Frontend", "Backend", and "API Spec".
+- [ ] Integrate a syntax-highlighting code viewer (e.g., react-syntax-highlighter) into each tab.
+- [ ] Implement "Copy to Clipboard" and "Download File" functionality.
+- [ ] Create the ChatComponent with a text input and message display area.
+
+### Interactive Chat Logic
+
+- [ ] Implement the POST /refine endpoint in the AI Gateway service.
+- [ ] The endpoint should accept the current code and a user prompt.
+- [ ] The endpoint should call the LLM with a prompt to modify the code.
+- [ ] Implement frontend logic in the ChatComponent to call the /refine endpoint.
+- [ ] The frontend should update the relevant code viewer with the response from the /refine endpoint.
+
+## Phase 4: Finalization and Testing
+
+### Comprehensive Testing
+
+- [ ] Create integration tests for the full workflow: video upload -> frame extraction -> code generation.
+- [ ] Add unit tests for the AI Gateway's code generation and API client logic.
+- [ ] Manually test the end-to-end user flow with several different UI videos.
+- [ ] Test the interactive chat refinement on all three artifact types.
+
+### Documentation
+
+- [ ] Create a README.md at the project root with detailed setup instructions, including how to configure the .env file.
+- [ ] Add comments to complex sections of the code in all three services.
+- [ ] Document the internal API contracts between the services.
+
+### Quality Assurance
+
+- [ ] Run linters across all three services and fix all errors.
+- [ ] Ensure the application builds and runs successfully with docker-compose up --build.
+- [ ] Verify the application runs on a machine with 16GB of RAM without significant performance issues.
+- [ ] Confirm that all AI interactions correctly use the free-tier models via OpenRouter.
+

@@ -1,0 +1,33 @@
+# Node
+node_modules/
+.npm/
+.pnpm-store/
+**/dist/
+**/.eslintcache
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
+
+# Docker
+**/.dockerignore
+
+# Build outputs
+**/build/
+
+# Local data/output
+processing_data/
+
