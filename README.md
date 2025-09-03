@@ -91,7 +91,8 @@ Example (Windows, tested):
 
 ```bash
 # Upload file through AI Gateway proxy (multipart/form-data)
-curl -v -F "file=@C:\\Users\\Lenovo ThinkPad T480\\Desktop\\VIDEO2CODE\\test-data\\WORKFLOW-OF-EXPORTING-GEMINI-CHATS.mp4;type=video/mp4" \
+# Replace with a real local MP4 path you have on disk
+curl -v -F "file=@C:\\path\\to\\your\\video.mp4;type=video/mp4" \
   http://localhost:8080/proxy/process
 # Example response (verified):
 # {"frameCount":393,"framesDir":"/data/frames","message":"Processing complete"}
