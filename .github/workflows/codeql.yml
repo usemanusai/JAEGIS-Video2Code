@@ -5,6 +5,10 @@ on:
   pull_request:
   schedule:
     - cron: '33 2 * * 1'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 
 jobs:
   analyze:

@@ -4,6 +4,13 @@ on:
   schedule:
     - cron: '17 3 * * *'
   workflow_dispatch:
+  repository_dispatch:
+    types: [vigil-run]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 
 jobs:
   vigil-scan:
@@ -90,6 +97,18 @@ jobs:
           REPORT="vigil-reports/VIGIL_REPORT-$ts.md"
           echo "# VIGIL Report - $ts" > "$REPORT"
           echo "\n## Summary" >> "$REPORT"
+      - name: Summarize license issues in report
+        run: |
+          mkdir -p vigil-reports
+          echo "\n## License Summary" >> ${{ steps.report.outputs.report }}
+          if [ -f vigil-reports/licenses.json ]; then
+            problem_count=$(jq 'to_entries | map(select(.value.licenses | test("GPL|AGPL|LGPL|SSPL|BUSL"))) | length' vigil-reports/licenses.json 2>/dev/null || echo 0)
+            echo "Potentially problematic licenses (GPL/AGPL/LGPL/SSPL/BUSL): $problem_count" >> ${{ steps.report.outputs.report }}
+            jq -r 'to_entries | map(select(.value.licenses | test("GPL|AGPL|LGPL|SSPL|BUSL"))) | .[] | "- \(.key): \(.value.licenses)"' vigil-reports/licenses.json 2>/dev/null || true >> ${{ steps.report.outputs.report }}
+          else
+            echo "license-checker output missing" >> ${{ steps.report.outputs.report }}
+          fi
+
           echo "- Trivy scans executed" >> "$REPORT"
           echo "- npm audit run for frontend and ai-gateway" >> "$REPORT"
           echo "- pip-audit run for video-processor" >> "$REPORT"
@@ -124,11 +143,11 @@ jobs:
           echo "Image high/critical total: $img_total"
 
           echo "Analyzing npm audit (frontend)..."
-          npm_front=$(jq '[.vulnerabilities | to_entries[]? | .[1] | select(.severity=="high" or .severity=="critical") ] | length' vigil-reports/npm-audit-frontend.json 2>/dev/null || echo 0)
+          npm_front=$(jq 'if has("vulnerabilities") then ([ .vulnerabilities | to_entries[]? | .value | select(.severity=="high" or .severity=="critical") ] | length) elif has("advisories") then ([ .advisories | to_entries[]? | .value | select(.severity=="high" or .severity=="critical") ] | length) else 0 end' vigil-reports/npm-audit-frontend.json 2>/dev/null || echo 0)
           echo "Frontend npm high/critical: $npm_front"
 
           echo "Analyzing npm audit (ai-gateway)..."
-          npm_api=$(jq '[.vulnerabilities | to_entries[]? | .[1] | select(.severity=="high" or .severity=="critical") ] | length' vigil-reports/npm-audit-ai-gateway.json 2>/dev/null || echo 0)
+          npm_api=$(jq 'if has("vulnerabilities") then ([ .vulnerabilities | to_entries[]? | .value | select(.severity=="high" or .severity=="critical") ] | length) elif has("advisories") then ([ .advisories | to_entries[]? | .value | select(.severity=="high" or .severity=="critical") ] | length) else 0 end' vigil-reports/npm-audit-ai-gateway.json 2>/dev/null || echo 0)
           echo "AI-Gateway npm high/critical: $npm_api"
 
           echo "Analyzing pip-audit..."
@@ -165,10 +184,10 @@ jobs:
                 echo
               done
               echo "### npm audit (frontend)"
-              jq -r '.vulnerabilities | to_entries[]? | select(.value.severity=="high" or .value.severity=="critical") | "- [\(.value.severity|ascii_upcase)] \(.key) -> via: \(.value.via | map(type=="object" and .name or .) | join(", "))"' vigil-reports/npm-audit-frontend.json 2>/dev/null || true
+              jq -r 'if has("vulnerabilities") then (.vulnerabilities | to_entries[]? | select(.value.severity=="high" or .value.severity=="critical") | "- [\(.value.severity|ascii_upcase)] \(.key) -> via: \(((.value.via // []) | map(type==\"object\" and .name or .) | join(", "))) ") elif has("advisories") then (.advisories | to_entries[]? | select(.value.severity=="high" or .value.severity=="critical") | "- [\(.value.severity|ascii_upcase)] \(.key) -> module: \(.value.module_name // \"\")") else empty end' vigil-reports/npm-audit-frontend.json 2>/dev/null || true
               echo
               echo "### npm audit (ai-gateway)"
-              jq -r '.vulnerabilities | to_entries[]? | select(.value.severity=="high" or .value.severity=="critical") | "- [\(.value.severity|ascii_upcase)] \(.key) -> via: \(.value.via | map(type=="object" and .name or .) | join(", "))"' vigil-reports/npm-audit-ai-gateway.json 2>/dev/null || true
+              jq -r 'if has("vulnerabilities") then (.vulnerabilities | to_entries[]? | select(.value.severity=="high" or .value.severity=="critical") | "- [\(.value.severity|ascii_upcase)] \(.key) -> via: \(((.value.via // []) | map(type==\"object\" and .name or .) | join(", "))) ") elif has("advisories") then (.advisories | to_entries[]? | select(.value.severity=="high" or .value.severity=="critical") | "- [\(.value.severity|ascii_upcase)] \(.key) -> module: \(.value.module_name // \"\")") else empty end' vigil-reports/npm-audit-ai-gateway.json 2>/dev/null || true
               echo
               echo "### pip-audit (video-processor)"
               jq -r '.[]? | select((.severity=="HIGH") or (.severity=="CRITICAL")) | "- [\(.severity)] \(.dependency|.name) \(.dependency|.version) -> CVE: \(.id)"' vigil-reports/pip-audit-video-processor.json 2>/dev/null || true
