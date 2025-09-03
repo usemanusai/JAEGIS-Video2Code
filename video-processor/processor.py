@@ -38,4 +38,3 @@ def extract_frames(video_path: str, out_dir: str, fps: int = 1) -> Tuple[int, st
 
     cap.release()
     return count, out_dir
-
