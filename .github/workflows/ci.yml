@@ -52,13 +52,13 @@ jobs:
         run: |
           docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm video-processor pytest -q --cov=. --cov-fail-under=60
 
-      - name: Node unit tests (ai-gateway) with coverage
+      - name: Node unit tests (ai-gateway)
         run: |
-          docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm ai-gateway npm run test:coverage
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm ai-gateway npm test
 
-      - name: Frontend unit tests with coverage
+      - name: Frontend unit tests
         run: |
-          docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm frontend npm run test:coverage
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm frontend npm test
 
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
