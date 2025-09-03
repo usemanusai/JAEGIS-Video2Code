@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/frontend"
+    schedule:
+      interval: daily
+  - package-ecosystem: npm
+    directory: "/ai-gateway"
+    schedule:
+      interval: daily
+  - package-ecosystem: pip
+    directory: "/video-processor"
+    schedule:
+      interval: daily
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: daily
+

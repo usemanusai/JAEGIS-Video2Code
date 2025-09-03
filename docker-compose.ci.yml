@@ -1,0 +1,8 @@
+services:
+  frontend:
+    ports: []
+  ai-gateway:
+    ports: []
+  video-processor:
+    ports: []
+

@@ -1,0 +1,14 @@
+* text=auto
+
+# Enforce LF for Python and YAML to avoid formatting drift in CI
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Mark images/binaries as binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.mp4 binary
+

@@ -1,0 +1,99 @@
+name: VIGIL Daily Security Scan
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  vigil-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      security-events: write
+      actions: read
+      issues: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install tools
+        run: |
+          npm -g i license-checker || true
+          pip install --no-cache-dir pip-audit
+
+      - name: Trivy scan (filesystem)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+
+      - name: Trivy scan (compose images)
+        run: |
+          docker --version
+          docker compose version
+          docker compose build
+          images=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep '^video2code-' || true)
+          for img in $images; do
+            echo "Scanning $img"
+            trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 0 "$img" || true
+          done
+
+      - name: npm audit (frontend)
+        run: |
+          cd frontend && npm ci --no-audit --fund=false && npm audit --audit-level=high || true
+
+      - name: npm audit (ai-gateway)
+        run: |
+          cd ai-gateway && npm ci --no-audit --fund=false && npm audit --audit-level=high || true
+
+      - name: pip-audit (video-processor)
+        run: |
+          cd video-processor && pip-audit || true
+
+      - name: License report (Node)
+        run: |
+          mkdir -p vigil-reports
+          npx --yes license-checker --json > vigil-reports/licenses.json || true
+
+      - name: Generate daily report
+        id: report
+        run: |
+          ts=$(date +%F)
+          mkdir -p vigil-reports
+          REPORT="vigil-reports/VIGIL_REPORT-$ts.md"
+          echo "# VIGIL Report - $ts" > "$REPORT"
+          echo "\n## Summary" >> "$REPORT"
+          echo "- Trivy scans executed" >> "$REPORT"
+          echo "- npm audit run for frontend and ai-gateway" >> "$REPORT"
+          echo "- pip-audit run for video-processor" >> "$REPORT"
+          echo "- Licenses report generated" >> "$REPORT"
+          echo "report=$REPORT" >> $GITHUB_OUTPUT
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vigil-report
+          path: ${{ steps.report.outputs.report }}
+
+      - name: Open issues for critical/high findings (placeholder)
+        if: always()
+        run: |
+          echo "In a production setup, parse scanner outputs and create issues with label vigil-alert."
+
