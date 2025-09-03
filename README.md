@@ -205,6 +205,23 @@ docker compose run --rm video-processor pytest -q
 
 # Node unit tests (ai-gateway)
 docker compose run --rm ai-gateway npm test
+
+### Integration Test
+
+Run a fully self-contained end-to-end test (upload → frame extraction → results) with:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm test-runner
+```
+
+Why this is reliable:
+- Generates a tiny 1-second MP4 via ffmpeg inside the test container
+- No dependency on external URLs or local test files
+- Works in mock mode (no OPENROUTER_API_KEYS required)
+
+Expected output:
+- Integration workflow passed
+
 ```
 
 Lint/Format
