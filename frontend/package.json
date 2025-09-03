@@ -10,7 +10,8 @@
     "preview": "vite preview --port 5173",
     "lint": "eslint . --config eslint.config.js",
     "format": "prettier -w .",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "test:coverage": "jest --coverage --coverageReporters=text-lcov"
   },
   "dependencies": {
     "react": "19.1.1",
@@ -29,6 +30,16 @@
     "@types/jest": "29.5.12",
     "@types/react": "19.0.2",
     "@types/react-dom": "19.0.2"
+  },
+  "jest": {
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "functions": 70,
+        "lines": 70,
+        "statements": 70
+      }
+    }
   }
 }
 
