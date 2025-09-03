@@ -13,6 +13,7 @@ def health():
     return jsonify({"ok": True})
 
 
+
 @app.post("/process")
 def process_video():
     if "file" not in request.files:
@@ -32,6 +33,7 @@ def process_video():
     return jsonify(
         {"message": "Processing complete", "frameCount": count, "framesDir": out_dir}
     )
+
 
 
 if __name__ == "__main__":
