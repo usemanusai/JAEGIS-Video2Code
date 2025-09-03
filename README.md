@@ -6,7 +6,7 @@
 
 VIDEO2CODE converts UI mockup videos into production-ready React components, NestJS backend controllers, and OpenAPI specifications using AI vision models via OpenRouter. It orchestrates video frame extraction, AI analysis, code generation, and interactive refinement — all containerized and ready to run with a single command.
 
-Status: Production Ready ✅ (All development phases complete; verified end‑to‑end including a sample video producing 393 frames)
+Status: Production Ready ✅ (v1.0.0). Verified end‑to‑end including a sample video producing 393 frames.
 
 - React 19.1.1, Vite 7.1.4, TypeScript 5.9.2
 - Node.js 22.19.0, Express 5.1.0
