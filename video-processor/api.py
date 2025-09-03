@@ -1,7 +1,19 @@
 from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 import os
-from processor import extract_frames, ensure_dir
+
+# Robust import of processor for varied CI/test environments
+try:
+    from processor import extract_frames, ensure_dir
+except ModuleNotFoundError:  # pragma: no cover - fallback path only
+    import importlib.util, sys
+    PROC_PATH = os.path.join(os.path.dirname(__file__), 'processor.py')
+    spec = importlib.util.spec_from_file_location('processor', PROC_PATH)
+    processor_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(processor_mod)  # type: ignore
+    sys.modules['processor'] = processor_mod
+    extract_frames = processor_mod.extract_frames
+    ensure_dir = processor_mod.ensure_dir
 
 UPLOAD_DIR = "/data/uploads"
 FRAMES_DIR = "/data/frames"

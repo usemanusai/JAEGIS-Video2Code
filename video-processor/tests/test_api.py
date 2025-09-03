@@ -1,9 +1,29 @@
 import io
 import os
+import sys
 import cv2
 import numpy as np
 import tempfile
-from api import app
+import importlib.util
+
+# Dynamically load api.py to avoid import path issues in CI images
+API_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "api.py"))
+PROC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "processor.py"))
+# Ensure the directory containing api.py (and processor.py) is importable
+project_root = os.path.dirname(API_PATH)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+# Preload processor module and register under its expected name so api.py can import it
+proc_spec = importlib.util.spec_from_file_location("processor", PROC_PATH)
+processor_mod = importlib.util.module_from_spec(proc_spec)
+proc_spec.loader.exec_module(processor_mod)  # type: ignore
+import sys as _sys
+_sys.modules["processor"] = processor_mod
+
+spec = importlib.util.spec_from_file_location("api_module", API_PATH)
+api = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(api)  # type: ignore
+app = api.app
 
 
 def _make_dummy_video(path: str, frames: int = 10, size=(64, 48), fps: int = 10):
