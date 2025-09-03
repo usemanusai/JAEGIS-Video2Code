@@ -222,7 +222,7 @@ Why this is reliable:
 Expected output:
 - Integration workflow passed
 
-```
+
 
 Lint/Format
 ```bash

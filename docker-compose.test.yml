@@ -6,9 +6,7 @@ services:
       - ai-gateway
     environment:
       - API_BASE=http://ai-gateway:8080
-      - TEST_VIDEO=/test-data/WORKFLOW-OF-EXPORTING-GEMINI-CHATS.mp4
     volumes:
       - ./ai-gateway/tests:/tests:ro
-      - ./test-data:/test-data:ro
-    command: ["node","integration.mjs"]
+    command: ["/bin/sh","-lc","apk add --no-cache ffmpeg && ffmpeg -f lavfi -i color=c=black:s=320x240:d=1 -pix_fmt yuv420p /tmp/sample.mp4 -y && TEST_VIDEO=/tmp/sample.mp4 node integration.mjs"]
 
