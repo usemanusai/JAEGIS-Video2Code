@@ -1,5 +1,29 @@
 # Node
 node_modules/
+**/node_modules/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Editors/OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# Test data / large binaries
+/test-data/*.mp4
+processing_data/
+
+# Python test caches
+.pytest_cache/
+
+# History backups
+.history/
+
+# Node
+node_modules/
 .npm/
 .pnpm-store/
 **/dist/
