@@ -2,6 +2,7 @@
 FROM python:3.13-slim
 
 # Install runtime dependencies for OpenCV
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        libgl1 \
