@@ -12,14 +12,14 @@ function testOpenRouterRotation() {
 async function testOrchestratorGeneration() {
   const svc = new OrchestratorService('')
   // monkeypatch: pretend frames exist
-  svc.listFrames = async () => ['/data/frames/f1.jpg', '/data/frames/f2.jpg']
-  // monkeypatch: fake LLM JSON content
-  svc.client.chatCompletion = async () => ({ choices: [{ message: { content: '{"screens":[{"id":1,"components":[{"type":"button","label":"Submit"}]}],"actions":["click"]}' } }] })
+  svc.listFrames = async () => ['/data/frames/f1.jpg', '/data/frames/f2.jpg', '/data/frames/f3.jpg']
+  // monkeypatch: fake LLM JSON content (wrapped in code fences to test extractor)
+  svc.client.chatCompletion = async () => ({ choices: [{ message: { content: '```json\n{"screens":[{"id":1,"components":[{"type":"button","label":"Submit"},{"type":"input","label":"Email"}]}],"actions":["click"]}\n```' } }] })
   const analysis = await svc.analyzeFrames()
   assert.ok(Array.isArray(analysis.ui))
   assert.ok(Array.isArray(analysis.actions))
   const artifacts = await svc.generateArtifacts()
-  assert.ok(artifacts.reactCode.includes('Generated UI'))
+  assert.ok(artifacts.reactCode.includes('<button>Submit</button>'))
   assert.ok(artifacts.openapi.includes('openapi: 3.0.0'))
   assert.ok(artifacts.backend.includes('@nestjs/common'))
 }

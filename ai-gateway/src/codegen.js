@@ -1,7 +1,23 @@
+function renderComponent(c){
+  const type=(c?.type||'').toLowerCase()
+  const label=c?.label||''
+  switch(type){
+    case 'button': return `<button>${label||'Button'}</button>`
+    case 'input': return `<input placeholder="${label||'Input'}" />`
+    case 'text': return `<p>${label||'Text'}</p>`
+    case 'label': return `<label>${label||'Label'}</label>`
+    default: return `<div>${label||type||'Component'}</div>`
+  }
+}
+
 export function generateReact(analysis) {
-  // Create a simple React component showing inferred summary
   const summary = (analysis?.llmSummary || '').replace(/`/g, '\\`')
-  return `import React from 'react'\n\nexport default function GeneratedScreen(){\n  return (\n    <div style={{padding:16}}>\n      <h2>Generated UI</h2>\n      <p>LLM summary:</p>\n      <pre>${summary}</pre>\n      <button>Primary</button>\n      <input placeholder="Type here" />\n    </div>\n  )\n}`
+  const screens = Array.isArray(analysis?.ui) ? analysis.ui : []
+  const blocks = screens.map((s)=>{
+    const comps = (s?.components||[]).map(renderComponent).join('\n        ')
+    return `<section style={{marginBottom:16}}><h3>Screen ${s?.id ?? ''}</h3>\n        ${comps}\n      </section>`
+  }).join('\n      ')
+  return `import React from 'react'\n\nexport default function GeneratedScreen(){\n  return (\n    <div style={{padding:16}}>\n      <h2>Generated UI</h2>\n      <details open><summary>LLM summary</summary>\n        <pre>${summary}</pre>\n      </details>\n      ${blocks || '<p>No components detected.</p>'}\n    </div>\n  )\n}`
 }
 
 export function generateOpenAPI() {
