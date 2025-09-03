@@ -38,6 +38,12 @@ async function uploadAndGenerate() {
   const data = await res.json()
   assert.ok(data.reactCode && data.openapi && data.backend)
   return data
+  // verify download.zip exists and is a zip
+  const zipRes = await fetch(`${base}/download.zip`)
+  assert.ok(zipRes.ok, `download.zip failed: ${zipRes.status}`)
+  const ctype = zipRes.headers.get('content-type') || ''
+  assert.ok(ctype.includes('application/zip'))
+
 }
 
 uploadAndGenerate()

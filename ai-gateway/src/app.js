@@ -1,6 +1,7 @@
 import express from 'express'
 import proxy from './proxy.js'
 import { OrchestratorService } from './orchestrator.js'
+import downloadHandler from './download.js'
 
 export const orchestrator = new OrchestratorService(process.env.OPENROUTER_API_KEYS || '')
 
@@ -19,6 +20,8 @@ app.get('/results', async (_req, res) => {
     res.status(500).json({ error: 'generation_failed' })
   }
 })
+
+app.get('/download.zip', downloadHandler)
 
 app.post('/refine', async (req, res) => {
   try {

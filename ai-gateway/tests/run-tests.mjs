@@ -27,6 +27,8 @@ async function testOrchestratorGeneration() {
 async function main() {
   testOpenRouterRotation()
   await testOrchestratorGeneration()
+  // Zip builder test
+  await import('./download.test.mjs')
   console.log('AI Gateway tests passed')
 }
 
