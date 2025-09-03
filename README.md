@@ -58,6 +58,10 @@ git clone <repository-url> && cd VIDEO2CODE
 # .env
 OPENROUTER_API_KEYS=your-key-here,optional-second-key
 OPENROUTER_MODEL=openai/gpt-oss-120b:free
+- MAX_UPLOAD_MB (AI Gateway): maximum upload size in MB (default 100)
+- VIDEO_PROCESSOR_TIMEOUT_MS (AI Gateway): timeout in ms waiting for /process (default 180000)
+- LLM_TIMEOUT_MS (AI Gateway): timeout in ms for OpenRouter analysis (default 20000)
+
 ```
 
 3) Start all services (first build may take a few minutes)
@@ -100,6 +104,9 @@ curl -v -F "file=@C:\\path\\to\\your\\video.mp4;type=video/mp4" \
 # {"frameCount":393,"framesDir":"/data/frames","message":"Processing complete"}
 
 # Get generated artifacts
+# Download all artifacts as ZIP
+curl -s -o video2code.zip http://localhost:8080/download.zip
+
 curl -s http://localhost:8080/results | jq .
 ```
 

@@ -84,20 +84,43 @@ export class OrchestratorService {
     if (!frames.length) return { ui: [], actions: [], llmSummary: 'No frames found' }
 
     const messages = await this.buildMessagesWithImages(frames)
-    const resp = await this.client.chatCompletion({ model: MODEL, messages })
-    const content = resp?.choices?.[0]?.message?.content || ''
-
-    const parsed = this.extractJsonFromContent(content)
-
-    return { ui: parsed.screens || [], actions: parsed.actions || [], llmSummary: content }
+    try {
+      const resp = await this.client.chatCompletion({ model: MODEL, messages, timeoutMs: parseInt(process.env.LLM_TIMEOUT_MS || '20000', 10) })
+      const content = resp?.choices?.[0]?.message?.content || ''
+      const parsed = this.extractJsonFromContent(content)
+      return { ui: parsed.screens || [], actions: parsed.actions || [], llmSummary: content }
+    } catch (e) {
+      if (e?.code === 'TIMEOUT') {
+        const err = new Error('LLM analysis timed out')
+        err.httpStatus = 504
+        throw err
+      }
+      const err = new Error(`LLM analysis failed: ${e?.message || e}`)
+      err.httpStatus = 502
+      throw err
+    }
   }
 
   async generateArtifacts() {
-    const analysis = await this.analyzeFrames()
-    const reactCode = generateReact(analysis)
-    const openapi = generateOpenAPI(analysis)
-    const backend = generateNestJS(analysis)
-    return { analysis, reactCode, openapi, backend }
+    let analysis
+    try {
+      analysis = await this.analyzeFrames()
+    } catch (e) {
+      // bubble up structured error with partial info
+      e.partial = { analysis: { ui: [], actions: [], llmSummary: String(e.message || e) } }
+      throw e
+    }
+    try {
+      const reactCode = generateReact(analysis)
+      const openapi = generateOpenAPI(analysis)
+      const backend = generateNestJS(analysis)
+      return { analysis, reactCode, openapi, backend }
+    } catch (e) {
+      const err = new Error(`Code generation failed: ${e?.message || e}`)
+      err.httpStatus = 500
+      err.partial = { analysis }
+      throw err
+    }
   }
 }
 

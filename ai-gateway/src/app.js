@@ -17,7 +17,13 @@ app.get('/results', async (_req, res) => {
     res.json(artifacts)
   } catch (e) {
     console.error(e)
-    res.status(500).json({ error: 'generation_failed' })
+    const status = e?.httpStatus || 500
+    const payload = {
+      error: 'generation_failed',
+      message: e?.message || 'Generation failed',
+      ...(e?.partial || {})
+    }
+    res.status(status).json(payload)
   }
 })
 
