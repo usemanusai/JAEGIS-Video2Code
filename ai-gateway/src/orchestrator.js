@@ -40,7 +40,9 @@ export class OrchestratorService {
       const start = content.indexOf('{')
       const end = content.lastIndexOf('}')
       if (start >= 0 && end >= start) parsed = JSON.parse(content.slice(start, end + 1))
-    } catch {}
+    } catch (err) {
+      // If parsing fails, keep the safe empty structure
+    }
 
     return { ui: parsed.screens || [], actions: parsed.actions || [], llmSummary: content }
   }
