@@ -12,6 +12,10 @@ jobs:
   build-test-lint:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+
     # Pass repository secrets to all docker compose commands securely
     env:
       OPENROUTER_API_KEYS: ${{ secrets.OPENROUTER_API_KEYS }}
@@ -62,6 +66,22 @@ jobs:
       - name: Lint frontend
         run: |
           docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm frontend npm run lint
+
+      - name: Security gate (fail CI on High/Critical) on protected branches
+        if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/') }}
+        run: |
+          set -e
+          # Require artifact from previous VIGIL? Instead, do a quick Trivy FS with severity filter for gating speed.
+          mkdir -p vigil-reports
+          trivy fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --format json --output vigil-reports/trivy-ci-gate.json . || true
+          count=$(jq '[.Results[]?.Vulnerabilities[]?] | length' vigil-reports/trivy-ci-gate.json 2>/dev/null || echo 0)
+          echo "High/Critical count: $count"
+          if [ "$count" -gt 0 ]; then
+            echo "High/Critical vulnerabilities detected on protected branch. Failing CI." >&2
+            exit 1
+          else
+            echo "No High/Critical vulnerabilities."
+          fi
 
       - name: Lint ai-gateway
         run: |

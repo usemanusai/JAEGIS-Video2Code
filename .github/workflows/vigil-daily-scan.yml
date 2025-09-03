@@ -50,6 +50,21 @@ jobs:
         with:
           scan-type: 'fs'
           scan-ref: '.'
+          format: 'sarif'
+          output: 'vigil-reports/trivy-fs.sarif'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+      - name: Upload Trivy FS SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: vigil-reports/trivy-fs.sarif
+      - name: Trivy scan (filesystem JSON)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
           format: 'json'
           output: 'vigil-reports/trivy-fs.json'
           exit-code: '0'
@@ -186,6 +201,18 @@ jobs:
               done
               echo "### npm audit (frontend)"
               jq -r 'if has("vulnerabilities") then (.vulnerabilities | to_entries[]? | select(.value.severity=="high" or .value.severity=="critical") | "- [\(.value.severity|ascii_upcase)] \(.key) -> via: \(((.value.via // []) | map(type==\"object\" and .name or .) | join(", "))) ") elif has("advisories") then (.advisories | to_entries[]? | select(.value.severity=="high" or .value.severity=="critical") | "- [\(.value.severity|ascii_upcase)] \(.key) -> module: \(.value.module_name // \"\")") else empty end' vigil-reports/npm-audit-frontend.json 2>/dev/null || true
+
+              echo "### License summary"
+              echo "See 'License Summary' section in the daily report artifact."
+
+            # Auto-assign to triage team if available
+            assignees=""
+            if gh api orgs/${{ github.repository_owner }}/teams 1>/dev/null 2>&1; then
+              # If a team slug 'security-triage' exists, request assignment via mention in body
+              echo "\n\n/cc @${{ github.repository_owner }}/security-triage" >> vigil-reports/ALERT_BODY.md
+            fi
+            gh issue edit $(gh issue list --search "$title" --state open --json number --jq '.[0].number') --add-label "security"
+
               echo
               echo "### npm audit (ai-gateway)"
               jq -r 'if has("vulnerabilities") then (.vulnerabilities | to_entries[]? | select(.value.severity=="high" or .value.severity=="critical") | "- [\(.value.severity|ascii_upcase)] \(.key) -> via: \(((.value.via // []) | map(type==\"object\" and .name or .) | join(", "))) ") elif has("advisories") then (.advisories | to_entries[]? | select(.value.severity=="high" or .value.severity=="critical") | "- [\(.value.severity|ascii_upcase)] \(.key) -> module: \(.value.module_name // \"\")") else empty end' vigil-reports/npm-audit-ai-gateway.json 2>/dev/null || true
