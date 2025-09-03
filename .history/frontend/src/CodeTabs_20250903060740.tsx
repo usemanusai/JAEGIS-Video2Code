@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import Chat from './Chat'
 
 export type Artifacts = {
   reactCode: string
@@ -24,14 +23,8 @@ function codeFor(tab: TabKey, a: Artifacts): string {
 
 export default function CodeTabs({ artifacts }: { artifacts: Artifacts }) {
   const [active, setActive] = useState<TabKey>('frontend')
-  const [code, setCode] = useState(() => codeFor('frontend', artifacts))
-
   const lang = useMemo(() => (active === 'api' ? 'yaml' : 'tsx'), [active])
-
-  const switchTab = (t: TabKey) => {
-    setActive(t)
-    setCode(codeFor(t, artifacts))
-  }
+  const code = codeFor(active, artifacts)
 
   const copy = async () => {
     await navigator.clipboard.writeText(code)
@@ -49,9 +42,9 @@ export default function CodeTabs({ artifacts }: { artifacts: Artifacts }) {
   return (
     <div>
       <div style={{ marginBottom: 8 }}>
-        <button onClick={() => switchTab('frontend')}>Frontend</button>{' '}
-        <button onClick={() => switchTab('backend')}>Backend</button>{' '}
-        <button onClick={() => switchTab('api')}>API Spec</button>
+        <button onClick={() => setActive('frontend')}>Frontend</button>{' '}
+        <button onClick={() => setActive('backend')}>Backend</button>{' '}
+        <button onClick={() => setActive('api')}>API Spec</button>
       </div>
       <div style={{ marginBottom: 8 }}>
         <button onClick={copy}>Copy</button>{' '}
@@ -60,7 +53,6 @@ export default function CodeTabs({ artifacts }: { artifacts: Artifacts }) {
       <SyntaxHighlighter language={lang} style={oneDark} customStyle={{ maxHeight: 480 }}>
         {code}
       </SyntaxHighlighter>
-      <Chat artifact={active} code={code} onUpdate={setCode} />
     </div>
   )
 }
