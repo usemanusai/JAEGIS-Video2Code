@@ -17,19 +17,28 @@ def health():
 @app.post("/process")
 def process_video():
     if "file" not in request.files:
-        return jsonify({"error": "missing file field"}), 400
+        return jsonify({"error": "missing_file", "message": "No file provided"}), 400
     file = request.files["file"]
     if file.filename == "":
-        return jsonify({"error": "empty filename"}), 400
+        return jsonify({"error": "empty_filename", "message": "Filename is empty"}), 400
 
     ensure_dir(UPLOAD_DIR)
     ensure_dir(FRAMES_DIR)
 
     fname = secure_filename(file.filename)
     path = os.path.join(UPLOAD_DIR, fname)
-    file.save(path)
+    try:
+        file.save(path)
+    except Exception:
+        return jsonify({"error": "save_failed", "message": "Could not save upload"}), 500
 
-    count, out_dir = extract_frames(path, FRAMES_DIR, fps=1)
+    try:
+        count, out_dir = extract_frames(path, FRAMES_DIR, fps=1)
+    except ValueError as ve:
+        return jsonify({"error": "cannot_open_video", "message": str(ve)}), 415
+    except Exception as e:
+        return jsonify({"error": "frame_extraction_failed", "message": str(e)}), 500
+
     return jsonify(
         {"message": "Processing complete", "frameCount": count, "framesDir": out_dir}
     )
