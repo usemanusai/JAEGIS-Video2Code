@@ -12,8 +12,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "express": "5.1.0",
-    "multer": "1.4.5-lts.2"
+    "express": "5.1.0"
   },
   "devDependencies": {
     "typescript": "5.9.2",
