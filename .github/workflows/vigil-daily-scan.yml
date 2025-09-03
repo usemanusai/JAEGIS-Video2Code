@@ -92,8 +92,14 @@ jobs:
           name: vigil-report
           path: ${{ steps.report.outputs.report }}
 
-      - name: Open issues for critical/high findings (placeholder)
+      - name: Auto-create issues for critical/high findings (stub)
         if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          echo "In a production setup, parse scanner outputs and create issues with label vigil-alert."
+          set -e
+          ts=$(date +%F)
+          title="VIGIL Alerts - $ts (stub)"
+          body=$'Automated VIGIL scan completed.\n\nParse tool outputs to create specific alerts. This is a stub.'
+          gh issue create --title "$title" --body "$body" --label vigil-alert || true
 

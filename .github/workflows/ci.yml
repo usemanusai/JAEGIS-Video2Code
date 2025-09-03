@@ -29,9 +29,9 @@ jobs:
           docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
 
 
-      - name: Python unit tests (video-processor)
+      - name: Python unit tests (video-processor) with coverage gate
         run: |
-          docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm video-processor pytest -q
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml run --rm video-processor pytest -q --cov=. --cov-fail-under=60
 
       - name: Node unit tests (ai-gateway)
         run: |
