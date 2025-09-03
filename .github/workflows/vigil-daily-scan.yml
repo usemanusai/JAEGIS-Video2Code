@@ -31,6 +31,7 @@ jobs:
 
       - name: Install tools
         run: |
+          sudo apt-get update && sudo apt-get install -y jq || true
           npm -g i license-checker || true
           pip install --no-cache-dir pip-audit
 
@@ -39,33 +40,39 @@ jobs:
         with:
           scan-type: 'fs'
           scan-ref: '.'
-          format: 'table'
+          format: 'json'
+          output: 'vigil-reports/trivy-fs.json'
           exit-code: '0'
           ignore-unfixed: true
           vuln-type: 'os,library'
 
       - name: Trivy scan (compose images)
         run: |
+          set -e
+          mkdir -p vigil-reports
           docker --version
           docker compose version
           docker compose build
           images=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep '^video2code-' || true)
           for img in $images; do
             echo "Scanning $img"
-            trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 0 "$img" || true
+            trivy image --format json --output "vigil-reports/trivy-image-$(echo $img | tr '/:' '_').json" --severity HIGH,CRITICAL --ignore-unfixed --exit-code 0 "$img" || true
           done
 
       - name: npm audit (frontend)
         run: |
-          cd frontend && npm ci --no-audit --fund=false && npm audit --audit-level=high || true
+          mkdir -p vigil-reports
+          cd frontend && npm ci --no-audit --fund=false && npm audit --json > ../vigil-reports/npm-audit-frontend.json || true
 
       - name: npm audit (ai-gateway)
         run: |
-          cd ai-gateway && npm ci --no-audit --fund=false && npm audit --audit-level=high || true
+          mkdir -p vigil-reports
+          cd ai-gateway && npm ci --no-audit --fund=false && npm audit --json > ../vigil-reports/npm-audit-ai-gateway.json || true
 
       - name: pip-audit (video-processor)
         run: |
-          cd video-processor && pip-audit || true
+          mkdir -p vigil-reports
+          cd video-processor && pip-audit -f json -o ../vigil-reports/pip-audit-video-processor.json || true
 
       - name: License report (Node)
         run: |
@@ -92,14 +99,81 @@ jobs:
           name: vigil-report
           path: ${{ steps.report.outputs.report }}
 
-      - name: Auto-create issues for critical/high findings (stub)
+      - name: Analyze scan results and create issues for HIGH/CRITICAL only
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -e
-          ts=$(date +%F)
-          title="VIGIL Alerts - $ts (stub)"
-          body=$'Automated VIGIL scan completed.\n\nParse tool outputs to create specific alerts. This is a stub.'
-          gh issue create --title "$title" --body "$body" --label vigil-alert || true
+          mkdir -p vigil-reports
+          echo "Analyzing Trivy filesystem results..."
+          fs_high=$(jq '[.Results[]?.Vulnerabilities[]? | select((.Severity=="HIGH") or (.Severity=="CRITICAL"))] | length' vigil-reports/trivy-fs.json 2>/dev/null || echo 0)
+          echo "FS high/critical count: $fs_high"
+
+          echo "Analyzing Trivy image results..."
+          img_total=0
+          for j in vigil-reports/trivy-image-*.json; do
+            [ -f "$j" ] || continue
+            c=$(jq '[.Results[]?.Vulnerabilities[]? | select((.Severity=="HIGH") or (.Severity=="CRITICAL"))] | length' "$j" 2>/dev/null || echo 0)
+            img_total=$((img_total + c))
+          done
+          echo "Image high/critical total: $img_total"
+
+          echo "Analyzing npm audit (frontend)..."
+          npm_front=$(jq '[.vulnerabilities | to_entries[]? | .[1] | select(.severity=="high" or .severity=="critical") ] | length' vigil-reports/npm-audit-frontend.json 2>/dev/null || echo 0)
+          echo "Frontend npm high/critical: $npm_front"
+
+          echo "Analyzing npm audit (ai-gateway)..."
+          npm_api=$(jq '[.vulnerabilities | to_entries[]? | .[1] | select(.severity=="high" or .severity=="critical") ] | length' vigil-reports/npm-audit-ai-gateway.json 2>/dev/null || echo 0)
+          echo "AI-Gateway npm high/critical: $npm_api"
+
+          echo "Analyzing pip-audit..."
+          pip_total=$(jq '[ .[]? | select((.severity=="HIGH") or (.severity=="CRITICAL")) ] | length' vigil-reports/pip-audit-video-processor.json 2>/dev/null || echo 0)
+          echo "pip-audit high/critical: $pip_total"
+
+          total=$((fs_high + img_total + npm_front + npm_api + pip_total))
+          echo "TOTAL high/critical: $total"
+
+          if [ "$total" -gt 0 ]; then
+            echo "Collecting details for issue body..."
+            {
+              echo "# VIGIL Alerts (High/Critical)"
+              echo
+              echo "Workflow: $GITHUB_RUN_URL"
+              echo
+              echo "## Summary"
+              echo "- Trivy FS: $fs_high high/critical"
+              echo "- Trivy Images: $img_total high/critical"
+              echo "- npm audit (frontend): $npm_front high/critical"
+              echo "- npm audit (ai-gateway): $npm_api high/critical"
+              echo "- pip-audit: $pip_total high/critical"
+              echo
+              echo "## Details"
+              echo "### Trivy FS"
+              jq -r '.Results[]?.Vulnerabilities[]? | select((.Severity=="HIGH") or (.Severity=="CRITICAL")) | "- [\(.Severity)] \(.PkgName) \(.InstalledVersion) -> CVE: \(.VulnerabilityID)"' vigil-reports/trivy-fs.json 2>/dev/null || true
+              echo
+              echo "### Trivy Images"
+              for j in vigil-reports/trivy-image-*.json; do
+                [ -f "$j" ] || continue
+                imgname=$(echo "$j" | sed 's#vigil-reports/trivy-image-##; s#\.json##')
+                echo "- Image: $imgname"
+                jq -r '.Results[]?.Vulnerabilities[]? | select((.Severity=="HIGH") or (.Severity=="CRITICAL")) | "  - [\(.Severity)] \(.PkgName) \(.InstalledVersion) -> CVE: \(.VulnerabilityID)"' "$j" 2>/dev/null || true
+                echo
+              done
+              echo "### npm audit (frontend)"
+              jq -r '.vulnerabilities | to_entries[]? | select(.value.severity=="high" or .value.severity=="critical") | "- [\(.value.severity|ascii_upcase)] \(.key) -> via: \(.value.via | map(type=="object" and .name or .) | join(", "))"' vigil-reports/npm-audit-frontend.json 2>/dev/null || true
+              echo
+              echo "### npm audit (ai-gateway)"
+              jq -r '.vulnerabilities | to_entries[]? | select(.value.severity=="high" or .value.severity=="critical") | "- [\(.value.severity|ascii_upcase)] \(.key) -> via: \(.value.via | map(type=="object" and .name or .) | join(", "))"' vigil-reports/npm-audit-ai-gateway.json 2>/dev/null || true
+              echo
+              echo "### pip-audit (video-processor)"
+              jq -r '.[]? | select((.severity=="HIGH") or (.severity=="CRITICAL")) | "- [\(.severity)] \(.dependency|.name) \(.dependency|.version) -> CVE: \(.id)"' vigil-reports/pip-audit-video-processor.json 2>/dev/null || true
+            } > vigil-reports/ALERT_BODY.md
+
+            title="VIGIL: High/Critical findings detected"
+            gh issue create --title "$title" --body-file vigil-reports/ALERT_BODY.md --label vigil-alert || true
+          else
+            echo "No High/Critical findings detected."
+          fi
 
