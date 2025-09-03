@@ -34,6 +34,9 @@ jobs:
           sudo apt-get update && sudo apt-get install -y jq || true
           npm -g i license-checker || true
           pip install --no-cache-dir pip-audit
+      - name: Prepare report directory
+        run: mkdir -p vigil-reports
+
 
       - name: Trivy scan (filesystem)
         uses: aquasecurity/trivy-action@0.28.0
