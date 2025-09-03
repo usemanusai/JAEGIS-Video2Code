@@ -8,6 +8,10 @@ jobs:
   build-test-lint:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Pass repository secrets to all docker compose commands securely
+    env:
+      OPENROUTER_API_KEYS: ${{ secrets.OPENROUTER_API_KEYS }}
+      OPENROUTER_MODEL: ${{ secrets.OPENROUTER_MODEL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,6 +27,11 @@ jobs:
       - name: Build and start services
         run: |
           docker compose up -d --build
+
+      # Sanity-check: ensure ai-gateway can see the env (prints only 'present/missing')
+      - name: Verify ai-gateway env injection (non-secret)
+        run: |
+          docker compose run --rm ai-gateway node -e "console.log(process.env.OPENROUTER_API_KEYS ? 'present' : 'missing', process.env.OPENROUTER_MODEL ? 'present' : 'missing')"
 
       - name: Python unit tests (video-processor)
         run: |
