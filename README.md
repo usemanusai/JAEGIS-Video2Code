@@ -264,6 +264,10 @@ Hot reload
   - Default: `qwen/qwen2.5-vl-32b-instruct:free` (fast, free-tier vision);
   - Alternatives: `google/gemma-3-27b-it:free`, `meta-llama/llama-3.2-11b-vision-instruct:free`, `mistralai/mistral-small-3.1-24b-instruct:free`, `qwen/qwen2.5-vl-72b-instruct:free`.
 - VITE_API_BASE
+- MAX_ANALYSIS_FRAMES
+  - Limits how many frames are sampled and sent to the LLM for analysis (default: 12).
+  - The gateway samples first, last, and evenly spaced frames in between to balance quality and cost.
+
   - Frontend API base URL for local dev. Default: `http://localhost:8080` (already set via docker-compose).
 
 Mock mode behavior
