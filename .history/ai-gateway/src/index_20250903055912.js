@@ -20,22 +20,6 @@ app.get('/results', async (_req, res) => {
   }
 })
 
-app.post('/refine', async (req, res) => {
-  try {
-    const { artifact, code, prompt } = req.body || {}
-    const messages = [
-      { role: 'system', content: 'You are a code editor. Modify the code as requested.' },
-      { role: 'user', content: `Artifact: ${artifact}\nPrompt: ${prompt}\n\nCode:\n${code}` }
-    ]
-    const resp = await orchestrator.client.chatCompletion({ model: 'openai/gpt-4o-mini', messages })
-    const updated = resp?.choices?.[0]?.message?.content || code
-    res.json({ updatedCode: updated })
-  } catch (e) {
-    console.error(e)
-    res.status(500).json({ error: 'refine_failed' })
-  }
-})
-
 app.listen(8080, () => {
   console.log('AI Gateway listening on :8080')
 })
