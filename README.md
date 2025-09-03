@@ -296,9 +296,50 @@ Note: Model names and availability are managed by OpenRouter and may evolve; see
 
 ## Troubleshooting
 
-- Port conflicts (5173/8080/5000)
-  - Check: `netstat -ano | findstr :8080` (Windows) or `lsof -i :8080` (macOS/Linux)
-  - Edit `docker-compose.yml` to remap host ports if needed
+### Anti-Port Conflict System
+
+VIDEO2CODE includes automated port conflict detection and resolution:
+
+**Automatic preflight checks:**
+```bash
+# Frontend (checks ports and suggests alternatives)
+cd frontend && npm run dev:safe
+
+# AI Gateway (PowerShell-based check)
+cd ai-gateway && npm run dev:safe
+```
+
+**Manual preflight:**
+```bash
+# Unix/macOS/Linux
+bash scripts/dev-preflight.sh
+
+# Windows PowerShell
+pwsh scripts/dev-preflight.ps1
+```
+
+If conflicts are detected, the scripts will:
+- Identify which processes are using ports 5173, 8080, 5000
+- Show PIDs and suggest kill commands
+- Generate `docker-compose.override.local.yml` with alternative port mappings
+- Provide the exact command to run with the override
+
+**Example output:**
+```
+Detected port conflicts:
+- 8080 (ai-gateway) is busy by PID 1234
+
+Created docker-compose.override.local.yml with suggested mappings:
+- frontend: 5173 -> 5173
+- ai-gateway: 8081 -> 8080
+- video-processor: 5000 -> 5000
+
+Next steps:
+docker compose -f docker-compose.yml -f docker-compose.override.local.yml up -d --build
+```
+
+### Other Common Issues
+
 - Upload failures
   - Ensure MP4 (H.264) format; confirm multipart/form-data with field name `file`
   - Large files: try a shorter clip; default practical limit ~500MB (adjust in proxy/service if needed)

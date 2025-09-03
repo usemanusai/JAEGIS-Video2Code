@@ -6,6 +6,7 @@
   "engines": { "node": ">=22" },
   "scripts": {
     "dev": "node --watch src/index.js",
+    "dev:safe": "pwsh ../scripts/dev-preflight.ps1; if ($LASTEXITCODE -eq 0 -or $LASTEXITCODE -eq 2) { node --watch src/index.js }",
     "start": "node src/index.js",
     "lint": "eslint .",
     "format": "prettier -w .",
