@@ -1,5 +1,7 @@
 # VIDEO2CODE — Transform UI Mockup Videos into Production Code
 
+[![CI](https://github.com/usemanusai/JAEGIS-Video2Code/actions/workflows/ci.yml/badge.svg)](https://github.com/usemanusai/JAEGIS-Video2Code/actions/workflows/ci.yml)
+
 VIDEO2CODE converts UI mockup videos into production-ready React components, NestJS backend controllers, and OpenAPI specifications using AI vision models via OpenRouter. It orchestrates video frame extraction, AI analysis, code generation, and interactive refinement — all containerized and ready to run with a single command.
 
 Status: Production Ready ✅ (All development phases complete; verified end‑to‑end including a sample video producing 393 frames)
