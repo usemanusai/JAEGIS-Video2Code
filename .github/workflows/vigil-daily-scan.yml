@@ -46,7 +46,7 @@ jobs:
 
 
       - name: Trivy scan (filesystem)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -61,7 +61,7 @@ jobs:
         with:
           sarif_file: vigil-reports/trivy-fs.sarif
       - name: Trivy scan (filesystem JSON)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           scan-type: 'fs'
           scan-ref: '.'
