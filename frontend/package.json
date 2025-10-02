@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "react": "19.1.1",
-    "react-dom": "19.1.1",
+    "react-dom": "19.2.0",
     "react-syntax-highlighter": "15.6.1",
     "react-router-dom": "6.26.2"
   },
@@ -30,7 +30,7 @@
     "jest": "30.1.3",
     "@types/jest": "29.5.12",
     "@types/react": "19.0.2",
-    "@types/react-dom": "19.0.2"
+    "@types/react-dom": "19.2.0"
   },
   "jest": {
     "coverageThreshold": {
